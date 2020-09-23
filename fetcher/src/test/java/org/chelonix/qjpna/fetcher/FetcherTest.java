@@ -10,7 +10,7 @@ import static org.hamcrest.CoreMatchers.is;
 @QuarkusTest
 public class FetcherTest {
 
-    @Test
+    //@Test
     public void testHelloEndpoint() {
         given()
           .when().get("/articles")

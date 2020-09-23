@@ -1,10 +1,14 @@
 package org.chelonix.qjpna.fetcher.nhknewseasy.client;
 
-import org.apache.commons.lang3.reflect.TypeUtils;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.fasterxml.jackson.datatype.jsr310.deser.LocalDateTimeDeserializer;
 
-import javax.json.bind.Jsonb;
-import javax.json.bind.JsonbBuilder;
-import javax.json.bind.JsonbException;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.ProcessingException;
 import javax.ws.rs.WebApplicationException;
@@ -15,6 +19,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Type;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -23,7 +29,12 @@ import java.util.stream.Collectors;
 @Consumes("application/json")
 public class MessageBodyReader implements javax.ws.rs.ext.MessageBodyReader<Object> {
 
-    private static final Jsonb jsonb = JsonbBuilder.create();
+    private static final SimpleModule TIME_MODULE = new JavaTimeModule()
+            .addDeserializer(LocalDateTime.class, new LocalDateTimeDeserializer(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+            .registerModule(TIME_MODULE);
 
     @Override
     public boolean isReadable(Class<?> aClass, Type type, Annotation[] annotations, MediaType mediaType) {
@@ -37,13 +48,11 @@ public class MessageBodyReader implements javax.ws.rs.ext.MessageBodyReader<Obje
             entityStream.read();
             entityStream.read();
             entityStream.read();
-            List<Map<String, List<NewsDescriptor>>> list = this.jsonb.fromJson(entityStream,
-                    TypeUtils.parameterize(List.class,
-                            TypeUtils.parameterize(Map.class, String.class,
-                                    TypeUtils.parameterize(List.class, NewsDescriptor.class))));
+            TypeReference<List<Map<String, List<NewsDescriptor>>>> typeRef = new TypeReference<>() { };
+            List<Map<String, List<NewsDescriptor>>> list = OBJECT_MAPPER.readValue(entityStream, typeRef);
             return list.get(0).values().stream().flatMap(List::stream).collect(Collectors.toList());
-        } catch (JsonbException jsonbException) {
-            throw new ProcessingException("Error deserializing a NewsList.", jsonbException);
+        } catch (JsonParseException | JsonMappingException je) {
+            throw new ProcessingException("Error deserializing a NewsList.", je);
         }
     }
 }

@@ -1,7 +1,8 @@
 package org.chelonix.qjpna.fetcher.nhknewseasy.client;
 
-import javax.json.bind.annotation.JsonbDateFormat;
-import javax.json.bind.annotation.JsonbProperty;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -9,12 +10,14 @@ import java.util.Objects;
 
 public class NewsDescriptor {
 
-    @JsonbProperty("news_id")
+    @JsonProperty("news_id")
     public String id;
     public String title;
-    @JsonbProperty("news_publication_time")
-    @JsonbDateFormat(value = "yyyy-MM-dd HH:mm:ss")
+    @JsonProperty("news_publication_time")
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     public LocalDateTime pubDate;
+    @JsonProperty("news_easy_voice_uri")
+    public String voiceURI;
 
     public String getId() {
         return id;
@@ -22,6 +25,10 @@ public class NewsDescriptor {
 
     public String getTitle() {
         return title;
+    }
+
+    public String getVoiceURI() {
+        return voiceURI;
     }
 
     public ZonedDateTime getPubDate() {
